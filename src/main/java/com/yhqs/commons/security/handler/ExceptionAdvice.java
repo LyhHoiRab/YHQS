@@ -94,4 +94,14 @@ public class ExceptionAdvice{
 
         return new Responsed(e.getMessage(), ResponseCode.TICKET_REFRESH_FAIL, false);
     }
+
+    /**
+     * 无权限访问
+     */
+    @ExceptionHandler(value = ForbiddenException.class)
+    public Responsed forbidden(ForbiddenException e){
+        logger.error(e.getMessage(), e);
+
+        return new Responsed(e.getMessage(), ResponseCode.FORBIDDEN, false);
+    }
 }

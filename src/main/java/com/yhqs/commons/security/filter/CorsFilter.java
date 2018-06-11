@@ -1,6 +1,7 @@
 package com.yhqs.commons.security.filter;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpStatus;
 import org.springframework.boot.web.servlet.ServletComponentScan;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;

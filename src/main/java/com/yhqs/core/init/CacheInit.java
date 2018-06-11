@@ -27,7 +27,7 @@ public class CacheInit{
 
         if(functions != null && !functions.isEmpty()){
             ShardedJedis jedis = pool.getResource();
-            RedisUtils.sadd(jedis, CacheName.NO_PERMISSION_URL, functions);
+            RedisUtils.save(jedis, CacheName.NO_PERMISSION_URL, functions);
             RedisUtils.close(jedis);
         }
     }

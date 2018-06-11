@@ -1,14 +1,14 @@
 package com.yhqs.core.account.service;
 
 import com.yhqs.commons.consts.CacheName;
+import com.yhqs.core.permission.consts.ResourceType;
 import com.yhqs.core.permission.dao.FunctionDao;
-import com.yhqs.core.permission.dao.MenuDao;
 import com.yhqs.core.permission.dao.PermissionDao;
 import com.yhqs.core.permission.dao.RoleDao;
 import com.yhqs.core.permission.entity.Function;
-import com.yhqs.core.permission.entity.Menu;
 import com.yhqs.core.permission.entity.Permission;
 import com.yhqs.core.permission.entity.Role;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Service;
@@ -39,9 +39,6 @@ public class AccountServiceImpl implements AccountService{
     private FunctionDao functionDao;
 
     @Autowired
-    private MenuDao menuDao;
-
-    @Autowired
     private ShardedJedisPool shardedJedisPool;
 
     @Override
@@ -63,35 +60,30 @@ public class AccountServiceImpl implements AccountService{
         String ticket = AccountUtils.login(username, password);
         User   user   = AccountUtils.getUser(ticket);
 
+        //账户ID
+        String accountId = user.getAccountId();
+
         //缓存
         ShardedJedis jedis = shardedJedisPool.getResource();
         //缓存用户信息
-        RedisUtils.save(jedis, CacheName.USER_INFO + ticket, user);
+        RedisUtils.save(jedis, CacheName.USER_INFO + accountId, user, CacheName.LOGIN_EXPIRE);
+        //缓存票据
+        RedisUtils.save(jedis, CacheName.USER_TICKET + ticket, accountId, CacheName.LOGIN_EXPIRE);
 
         //查询权限
         Set<Permission> permissions = new HashSet<Permission>();
-        permissions.addAll(permissionDao.findByAccountId(user.getAccountId(), null));
+        permissions.addAll(permissionDao.findByAccountId(user.getAccountId(), ResourceType.FUNCTION));
 
         List<Role> roles = roleDao.findByAccountId(user.getAccountId());
         if(roles != null && !roles.isEmpty()){
-            permissions.addAll(permissionDao.findByRoleIds(ObjectUtils.ids(roles), null));
+            permissions.addAll(permissionDao.findByRoleIds(ObjectUtils.ids(roles), ResourceType.FUNCTION));
         }
 
         //所有功能
         Set<String> functionIds = new HashSet<String>();
-        //所有菜单
-        Set<String> menuIds = new HashSet<String>();
-
-        for(Permission permission : permissions){
-            switch(permission.getType()){
-                case MENU:
-                    menuIds.add(permission.getResourceId());
-                    break;
-                case FUNCTION:
-                    functionIds.add(permission.getResourceId());
-                    break;
-                default:
-                    break;
+        if(permissions != null && !permissions.isEmpty()){
+            for(Permission permission : permissions){
+                functionIds.add(permission.getResourceId());
             }
         }
 
@@ -99,15 +91,7 @@ public class AccountServiceImpl implements AccountService{
             List<Function> functions = functionDao.find(null, null, null, new ArrayList<String>(functionIds));
             //缓存
             if(functions != null && !functions.isEmpty()){
-                RedisUtils.sadd(jedis, CacheName.USER_FUNCTION + ticket, functions);
-            }
-        }
-
-        if(menuIds != null && !menuIds.isEmpty()){
-            List<Menu> menus = menuDao.find(null, null, null, null, null, new ArrayList<String>(menuIds));
-            //缓存
-            if(menus != null && !menus.isEmpty()){
-                RedisUtils.sadd(jedis, CacheName.USER_MENU + ticket, menus);
+                RedisUtils.save(jedis, CacheName.USER_FUNCTION + accountId, functions, CacheName.LOGIN_EXPIRE);
             }
         }
 
@@ -124,11 +108,15 @@ public class AccountServiceImpl implements AccountService{
         if(AccountUtils.logout(ticket)){
             ShardedJedis jedis = shardedJedisPool.getResource();
 
-            //删除相关缓存
-            RedisUtils.delete(jedis, CacheName.USER_INFO + ticket);
-            RedisUtils.delete(jedis, CacheName.USER_FUNCTION + ticket);
-            RedisUtils.delete(jedis, CacheName.USER_MENU + ticket);
-            RedisUtils.close(jedis);
+            String accountId = RedisUtils.get(jedis, CacheName.USER_TICKET + ticket, String.class);
+
+            if(StringUtils.isNotBlank(accountId)){
+                //删除相关缓存
+                RedisUtils.delete(jedis, CacheName.USER_TICKET + ticket);
+                RedisUtils.delete(jedis, CacheName.USER_INFO + accountId);
+                RedisUtils.delete(jedis, CacheName.USER_FUNCTION + accountId);
+                RedisUtils.close(jedis);
+            }
         }
     }
 }

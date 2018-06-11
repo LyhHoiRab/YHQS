@@ -21,8 +21,8 @@ public class UserRestController{
 
     @RequestMapping(value = "", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Responsed<User> getByTicket(HttpServletRequest request) throws Exception{
-        //查询ticket
         String ticket = request.getHeader(HttpHeaderName.AUTHORIZATION);
+
         //查询用户信息
         User user = userService.getByTicket(ticket);
 
