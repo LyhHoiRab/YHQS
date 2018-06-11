@@ -1,0 +1,368 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+                        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.yhqs.core.permission.dao.mapper.PermissionMapper">
+
+    <sql id="WHERE_SQL">
+        <where>
+            <if test="params.andCriterions != null and params.andCriterions.size > 0">
+                <foreach collection="params.andCriterions" item="criterion">
+                    <trim prefix="AND (" suffix=")">
+                        <choose>
+                            <when test="criterion.noValue">
+                                ${criterion.property} ${criterion.operator}
+                            </when>
+                            <when test="criterion.singleValue">
+                                ${criterion.property} ${criterion.operator} #{criterion.value}
+                            </when>
+                            <when test="criterion.betweenValue">
+                                ${criterion.property} ${criterion.operator} #{criterion.value} AND #{criterion.secondValue}
+                            </when>
+                            <when test="criterion.listValue">
+                                ${criterion.property} ${criterion.operator}
+                                <foreach collection="criterion.value" item="item" open="(" close=")" separator=",">
+                                    #{item}
+                                </foreach>
+                            </when>
+                            <when test="criterion.andCriterionValue">
+                                <foreach collection="criterion.value" item="item" open="(" close=")" separator="AND">
+                                    <trim prefix="(" suffix=")">
+                                        <choose>
+                                            <when test="item.noValue">
+                                                ${item.property} ${item.operator}
+                                            </when>
+                                            <when test="item.singleValue">
+                                                ${item.property} ${item.operator} #{item.value}
+                                            </when>
+                                            <when test="item.betweenValue">
+                                                ${item.property} ${item.operator} #{item.value} AND #{item.secondValue}
+                                            </when>
+                                            <when test="item.listValue">
+                                                ${item.property} ${item.operator}
+                                                <foreach collection="item.value" item="itemValue" open="(" close=")" separator=",">
+                                                    #{itemValue}
+                                                </foreach>
+                                            </when>
+                                        </choose>
+                                    </trim>
+                                </foreach>
+                            </when>
+                            <when test="criterion.orCriterionValue">
+                                <foreach collection="criterion.value" item="item" open="(" close=")" separator="OR">
+                                    <trim prefix="(" suffix=")">
+                                        <choose>
+                                            <when test="item.noValue">
+                                                ${item.property} ${item.operator}
+                                            </when>
+                                            <when test="item.singleValue">
+                                                ${item.property} ${item.operator} #{item.value}
+                                            </when>
+                                            <when test="item.betweenValue">
+                                                ${item.property} ${item.operator} #{item.value} AND #{item.secondValue}
+                                            </when>
+                                            <when test="item.listValue">
+                                                ${item.property} ${item.operator}
+                                                <foreach collection="item.value" item="itemValue" open="(" close=")" separator=",">
+                                                    #{itemValue}
+                                                </foreach>
+                                            </when>
+                                        </choose>
+                                    </trim>
+                                </foreach>
+                            </when>
+                        </choose>
+                    </trim>
+                </foreach>
+            </if>
+
+            <if test="params.orCriterions != null and params.orCriterions.size > 0">
+                <foreach collection="params.orCriterions" item="criterion">
+                    <trim prefix="OR (" suffix=")">
+                        <choose>
+                            <when test="criterion.noValue">
+                                ${criterion.property} ${criterion.operator}
+                            </when>
+                            <when test="criterion.singleValue">
+                                ${criterion.property} ${criterion.operator} #{criterion.value}
+                            </when>
+                            <when test="criterion.betweenValue">
+                                ${criterion.property} ${criterion.operator} #{criterion.value} AND #{criterion.secondValue}
+                            </when>
+                            <when test="criterion.listValue">
+                                ${criterion.property} ${criterion.operator}
+                                <foreach collection="criterion.value" item="item" open="(" close=")" separator=",">
+                                    #{item}
+                                </foreach>
+                            </when>
+                            <when test="criterion.andCriterionValue">
+                                <foreach collection="criterion.value" item="item" open="(" close=")" separator="AND">
+                                    <trim prefix="(" suffix=")">
+                                        <choose>
+                                            <when test="item.noValue">
+                                                ${item.property} ${item.operator}
+                                            </when>
+                                            <when test="item.singleValue">
+                                                ${item.property} ${item.operator} #{item.value}
+                                            </when>
+                                            <when test="item.betweenValue">
+                                                ${item.property} ${item.operator} #{item.value} AND #{item.secondValue}
+                                            </when>
+                                            <when test="item.listValue">
+                                                ${item.property} ${item.operator}
+                                                <foreach collection="item.value" item="itemValue" open="(" close=")" separator=",">
+                                                    #{itemValue}
+                                                </foreach>
+                                            </when>
+                                        </choose>
+                                    </trim>
+                                </foreach>
+                            </when>
+                            <when test="criterion.orCriterionValue">
+                                <foreach collection="criterion.value" item="item" open="(" close=")" separator="OR">
+                                    <trim prefix="(" suffix=")">
+                                        <choose>
+                                            <when test="item.noValue">
+                                                ${item.property} ${item.operator}
+                                            </when>
+                                            <when test="item.singleValue">
+                                                ${item.property} ${item.operator} #{item.value}
+                                            </when>
+                                            <when test="item.betweenValue">
+                                                ${item.property} ${item.operator} #{item.value} AND #{item.secondValue}
+                                            </when>
+                                            <when test="item.listValue">
+                                                ${item.property} ${item.operator}
+                                                <foreach collection="item.value" item="itemValue" open="(" close=")" separator=",">
+                                                    #{itemValue}
+                                                </foreach>
+                                            </when>
+                                        </choose>
+                                    </trim>
+                                </foreach>
+                            </when>
+                        </choose>
+                    </trim>
+                </foreach>
+            </if>
+        </where>
+    </sql>
+
+    <resultMap id="permission" type="com.yhqs.core.permission.entity.Permission">
+        <id     column="id"          property="id"         javaType="java.lang.String"/>
+        <result column="resource_id" property="resourceId" javaType="java.lang.String"/>
+        <result column="type"        property="type"       typeHandler="ResourceTypeHandler"/>
+        <result column="create_time" property="createTime" javaType="java.util.Date"/>
+        <result column="update_time" property="updateTime" javaType="java.util.Date"/>
+    </resultMap>
+
+    <insert id="save">
+        INSERT
+          INTO permission (
+               id,
+               resource_id,
+               type,
+               create_time
+          ) VALUE (
+               #{id,         jdbcType=VARCHAR},
+               #{resourceId, jdbcType=VARCHAR},
+               #{type,       typeHandler=ResourceTypeHandler},
+               #{createTime, jdbcType=TIMESTAMP}
+          )
+    </insert>
+
+    <insert id="saveList">
+        INSERT
+          INTO permission (
+               id,
+               resource_id,
+               type,
+               create_time
+          ) VALUES
+        <foreach collection="permissions" item="permission" separator=",">
+          (
+                #{permission.id,         jdbcType=VARCHAR},
+                #{permission.resourceId, jdbcType=VARCHAR},
+                #{permission.type,       typeHandler=ResourceTypeHandler},
+                #{permission.createTime, jdbcType=TIMESTAMP}
+          )
+        </foreach>
+    </insert>
+
+    <insert id="saveRelationsToRole">
+        INSERT
+          INTO role_permission (
+               role_id,
+               permission_id
+          ) VALUES
+        <foreach collection="permissionIds" item="permissionId" separator=",">
+          (
+               #{roleId,       jdbcType=VARCHAR},
+               #{permissionId, jdbcType=VARCHAR}
+          )
+        </foreach>
+    </insert>
+
+    <insert id="saveRelationsToAccount">
+        INSERT
+          INTO account_permission (
+               account_id,
+               permission_id
+          ) VALUES
+        <foreach collection="permissionIds" item="permissionId" separator=",">
+          (
+               #{accountId,    jdbcType=VARCHAR},
+               #{permissionId, jdbcType=VARCHAR}
+          )
+        </foreach>
+    </insert>
+
+    <insert id="saveResourceToRoles">
+        INSERT
+          INTO role_permission (
+               role_id,
+               permission_id
+          ) VALUES
+        <foreach collection="permissionIds" item="permissionId" separator=",">
+          (
+               #{role_id,      jdbcType=VARCHAR},
+               #{permissionId, jdbcType=VARCHAR}
+          )
+        </foreach>
+    </insert>
+
+    <delete id="deleteRelationsToRole">
+        DELETE rp
+        FROM role_permission rp
+        LEFT JOIN permission p
+        ON p.id = rp.permission_id
+        WHERE rp.role_id = #{roleId}
+        <if test="type != null">
+            AND p.type = #{type, typeHandler=ResourceTypeHandler}
+        </if>
+    </delete>
+
+    <delete id="deleteRelationsToAccount">
+        DELETE ap
+          FROM account_permission ap
+     LEFT JOIN permission p
+            ON p.id = ap.permission_id
+         WHERE ap.account_id = #{accountId}
+      <if test="type != null">
+          AND p.type = #{type, typeHandler=ResourceTypeHandler}
+      </if>
+    </delete>
+
+    <delete id="deleteResourcesToAccounts">
+        DELETE
+          FROM account_permission
+         WHERE permission_id IN
+      <foreach collection="permissionIds" item="permissionId" separator="," open="(" close=")">
+          #{permissionId}
+      </foreach>
+    </delete>
+
+    <delete id="deleteResourceToRoles">
+        DELETE
+          FROM role_permission
+         WHERE permission_id = #{permissionId}
+           AND role_id IN
+       <foreach collection="roleIds" item="roleId" open="(" close=")" separator=",">
+           #{roleId}
+       </foreach>
+    </delete>
+
+    <select id="get" resultMap="permission">
+        SELECT *
+          FROM permission
+        <if test="params != null">
+            <include refid="WHERE_SQL"/>
+        </if>
+    </select>
+
+    <select id="find" resultMap="permission">
+        SELECT *
+          FROM permission
+        <if test="params != null">
+            <include refid="WHERE_SQL"/>
+
+            <if test="params.sorts != null and params.sorts.size > 0">
+                ORDER BY
+                <foreach collection="params.sorts" item="sort" separator=",">
+                    ${sort.property} ${sort.operator}
+                </foreach>
+            </if>
+
+            <if test="params.limit != null">
+                ${params.limit.operator} ${params.limit.value}, ${params.limit.secondValue}
+            </if>
+        </if>
+    </select>
+
+    <select id="findByRoleIds" resultMap="permission">
+        SELECT p.*
+          FROM permission p
+     LEFT JOIN role_permission rp
+            ON rp.permission_id = p.id
+        <if test="params != null">
+            <include refid="WHERE_SQL"/>
+
+            <if test="params.sorts != null and params.sorts.size > 0">
+                ORDER BY
+                <foreach collection="params.sorts" item="sort" separator=",">
+                    ${sort.property} ${sort.operator}
+                </foreach>
+            </if>
+
+            <if test="params.limit != null">
+                ${params.limit.operator} ${params.limit.value}, ${params.limit.secondValue}
+            </if>
+        </if>
+    </select>
+
+    <select id="findByAccountId" resultMap="permission">
+        SELECT p.*
+          FROM permission p
+     LEFT JOIN account_permission ap
+            ON ap.permission_id = p.id
+        <if test="params != null">
+            <include refid="WHERE_SQL"/>
+
+            <if test="params.sorts != null and params.sorts.size > 0">
+                ORDER BY
+                <foreach collection="params.sorts" item="sort" separator=",">
+                    ${sort.property} ${sort.operator}
+                </foreach>
+            </if>
+
+            <if test="params.limit != null">
+                ${params.limit.operator} ${params.limit.value}, ${params.limit.secondValue}
+            </if>
+        </if>
+    </select>
+
+    <select id="findAccountIdsByResourceId" resultType="java.lang.String">
+        SELECT ap.account_id
+          FROM account_permission ap
+     LEFT JOIN permission p
+            ON p.id = permission_id
+         WHERE p.resource_id = #{resourceId}
+    </select>
+
+    <select id="findAccountIdsByRoleIds" resultType="java.lang.String">
+        SELECT account_id
+          FROM account_role
+         WHERE role_id IN
+      <foreach collection="roleIds" item="roleId" separator="," open="(" close=")">
+          #{roleId}
+      </foreach>
+    </select>
+
+    <select id="findRoleIdsByResourceId" resultType="java.lang.String">
+        SELECT rp.role_id
+          FROM role_premission rp
+     LEFT JOIN permission p
+            ON p.id = permission_id
+         WHERE p.resource_id = #{resourceId}
+    </select>
+</mapper>
