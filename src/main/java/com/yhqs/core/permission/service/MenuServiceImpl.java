@@ -20,6 +20,7 @@ import org.wah.doraemon.security.request.Page;
 import org.wah.doraemon.security.request.PageRequest;
 import org.wah.doraemon.utils.ObjectUtils;
 import org.wah.doraemon.utils.RedisUtils;
+import org.wah.ferryman.utils.AccountUtils;
 import redis.clients.jedis.ShardedJedis;
 import redis.clients.jedis.ShardedJedisPool;
 
@@ -76,46 +77,52 @@ public class MenuServiceImpl implements MenuService{
     }
 
     @Order
-    public List<Menu> getByTicket(String ticket){
+    public List<Menu> getByTicket(String ticket) throws Exception{
         ShardedJedis jedis = pool.getResource();
 
-        //查询账户ID
-        String accountId = RedisUtils.get(jedis, CacheName.USER_TICKET + ticket, String.class);
-        if(StringUtils.isBlank(accountId)){
-            throw new TicketAuthenticationException("无效的票据凭证");
-        }
-
-        //查询权限
-        Set<Permission> permissions = new HashSet<Permission>();
-        permissions.addAll(permissionDao.findByAccountId(accountId, ResourceType.MENU));
-
-        List<Role> roles = roleDao.findByAccountId(accountId);
-        if(roles != null && !roles.isEmpty()){
-            permissions.addAll(permissionDao.findByRoleIds(ObjectUtils.ids(roles), ResourceType.MENU));
-        }
-
-        //所有功能
-        Set<String> menuIds = new HashSet<String>();
-        if(permissions != null && !permissions.isEmpty()){
-            for(Permission permission : permissions){
-                menuIds.add(permission.getResourceId());
+        try{
+            //查询用户
+            User user = RedisUtils.get(jedis, CacheName.USER_INFO + ticket, User.class);
+            if(user == null){
+                user = AccountUtils.getUser(ticket);
+                //缓存
+                RedisUtils.save(jedis, CacheName.USER_INFO + ticket, user, CacheName.LOGIN_EXPIRE);
             }
-        }
 
-        //排序
-        List<Menu> list = menuDao.find(null, null, null, null, null, new ArrayList<String>(menuIds));
+            //查询权限
+            Set<Permission> permissions = new HashSet<Permission>();
+            permissions.addAll(permissionDao.findByAccountId(user.getAccountId(), ResourceType.MENU));
 
-        Menu temp;
-        for(int i = 0; i < list.size() - 1; i++){
-            for(int j = list.size() - 1; j > i; j--){
-                if(list.get(j).getSorted() < list.get(j - 1).getSorted()){
-                    temp = list.get(j);
-                    list.set(j, list.get(j - 1));
-                    list.set(j - 1, temp);
+            List<Role> roles = roleDao.findByAccountId(user.getAccountId());
+            if(roles != null && !roles.isEmpty()){
+                permissions.addAll(permissionDao.findByRoleIds(ObjectUtils.ids(roles), ResourceType.MENU));
+            }
+
+            //所有功能
+            Set<String> menuIds = new HashSet<String>();
+            if(permissions != null && !permissions.isEmpty()){
+                for(Permission permission : permissions){
+                    menuIds.add(permission.getResourceId());
                 }
             }
-        }
 
-        return list;
+            //排序
+            List<Menu> list = menuDao.find(null, null, null, null, null, new ArrayList<String>(menuIds));
+
+            Menu temp;
+            for(int i = 0; i < list.size() - 1; i++){
+                for(int j = list.size() - 1; j > i; j--){
+                    if(list.get(j).getSorted() < list.get(j - 1).getSorted()){
+                        temp = list.get(j);
+                        list.set(j, list.get(j - 1));
+                        list.set(j - 1, temp);
+                    }
+                }
+            }
+
+            return list;
+        }finally{
+            RedisUtils.close(jedis);
+        }
     }
 }

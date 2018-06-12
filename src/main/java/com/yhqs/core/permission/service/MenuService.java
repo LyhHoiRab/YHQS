@@ -16,5 +16,5 @@ public interface MenuService{
 
     Page<Menu> page(PageRequest pageRequest, String id, String name, String url, String parentId, Boolean isParent);
 
-    List<Menu> getByTicket(String ticket);
+    List<Menu> getByTicket(String ticket) throws Exception;
 }

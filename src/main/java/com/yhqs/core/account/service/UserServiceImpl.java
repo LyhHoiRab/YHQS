@@ -28,25 +28,23 @@ public class UserServiceImpl implements UserService{
         //查询缓存
         ShardedJedis jedis = pool.getResource();
 
-        //查询账户ID
-        String accountId = RedisUtils.get(jedis, CacheName.USER_TICKET + ticket, String.class);
-        if(StringUtils.isBlank(accountId)){
-            throw new TicketAuthenticationException("无效的票据凭证");
-        }
+        try{
+            User user = RedisUtils.get(jedis, CacheName.USER_INFO + ticket, User.class);
+            if(user != null){
+                //刷新有效期
+                RedisUtils.expire(jedis, CacheName.USER_INFO + ticket, CacheName.LOGIN_EXPIRE);
+                return user;
+            }
 
-        User user = RedisUtils.get(jedis, CacheName.USER_INFO + accountId, User.class);
-        if(user != null){
-            RedisUtils.close(jedis);
+            //查询用户信息
+            user = AccountUtils.getUser(ticket);
+
+            //缓存
+            RedisUtils.save(jedis, CacheName.USER_INFO + ticket, user, CacheName.LOGIN_EXPIRE);
+
             return user;
+        }finally{
+            RedisUtils.close(jedis);
         }
-
-        //查询用户信息
-        user = AccountUtils.getUser(ticket);
-
-        //缓存
-        RedisUtils.save(jedis, CacheName.USER_INFO + accountId, user, CacheName.LOGIN_EXPIRE);
-        RedisUtils.close(jedis);
-
-        return user;
     }
 }

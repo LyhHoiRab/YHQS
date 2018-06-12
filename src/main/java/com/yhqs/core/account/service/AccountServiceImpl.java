@@ -57,48 +57,46 @@ public class AccountServiceImpl implements AccountService{
         Assert.hasText(username, "账户名不能为空");
         Assert.hasText(password, "账户密码不能为空");
 
-        String ticket = AccountUtils.login(username, password);
-        User   user   = AccountUtils.getUser(ticket);
-
-        //账户ID
-        String accountId = user.getAccountId();
-
         //缓存
         ShardedJedis jedis = shardedJedisPool.getResource();
-        //缓存用户信息
-        RedisUtils.save(jedis, CacheName.USER_INFO + accountId, user, CacheName.LOGIN_EXPIRE);
-        //缓存票据
-        RedisUtils.save(jedis, CacheName.USER_TICKET + ticket, accountId, CacheName.LOGIN_EXPIRE);
 
-        //查询权限
-        Set<Permission> permissions = new HashSet<Permission>();
-        permissions.addAll(permissionDao.findByAccountId(user.getAccountId(), ResourceType.FUNCTION));
+        try{
+            String ticket = AccountUtils.login(username, password);
+            User   user   = AccountUtils.getUser(ticket);
 
-        List<Role> roles = roleDao.findByAccountId(user.getAccountId());
-        if(roles != null && !roles.isEmpty()){
-            permissions.addAll(permissionDao.findByRoleIds(ObjectUtils.ids(roles), ResourceType.FUNCTION));
-        }
+            //缓存用户信息
+            RedisUtils.save(jedis, CacheName.USER_INFO + ticket, user, CacheName.LOGIN_EXPIRE);
 
-        //所有功能
-        Set<String> functionIds = new HashSet<String>();
-        if(permissions != null && !permissions.isEmpty()){
-            for(Permission permission : permissions){
-                functionIds.add(permission.getResourceId());
+            //查询权限
+            Set<Permission> permissions = new HashSet<Permission>();
+            permissions.addAll(permissionDao.findByAccountId(user.getAccountId(), ResourceType.FUNCTION));
+
+            List<Role> roles = roleDao.findByAccountId(user.getAccountId());
+            if(roles != null && !roles.isEmpty()){
+                permissions.addAll(permissionDao.findByRoleIds(ObjectUtils.ids(roles), ResourceType.FUNCTION));
             }
-        }
 
-        if(functionIds != null && !functionIds.isEmpty()){
-            List<Function> functions = functionDao.find(null, null, null, new ArrayList<String>(functionIds));
-            //缓存
-            if(functions != null && !functions.isEmpty()){
-                RedisUtils.save(jedis, CacheName.USER_FUNCTION + accountId, functions, CacheName.LOGIN_EXPIRE);
+            //所有功能
+            Set<String> functionIds = new HashSet<String>();
+            if(permissions != null && !permissions.isEmpty()){
+                for(Permission permission : permissions){
+                    functionIds.add(permission.getResourceId());
+                }
             }
+
+            if(functionIds != null && !functionIds.isEmpty()){
+                List<Function> functions = functionDao.find(null, null, null, new ArrayList<String>(functionIds));
+                //缓存
+                if(functions != null && !functions.isEmpty()){
+                    RedisUtils.save(jedis, CacheName.USER_FUNCTION + ticket, functions, CacheName.LOGIN_EXPIRE);
+                }
+            }
+
+            //返回Ticket
+            return ticket;
+        }finally{
+            RedisUtils.close(jedis);
         }
-
-        RedisUtils.close(jedis);
-
-        //返回Ticket
-        return ticket;
     }
 
     @Order
@@ -108,15 +106,9 @@ public class AccountServiceImpl implements AccountService{
         if(AccountUtils.logout(ticket)){
             ShardedJedis jedis = shardedJedisPool.getResource();
 
-            String accountId = RedisUtils.get(jedis, CacheName.USER_TICKET + ticket, String.class);
-
-            if(StringUtils.isNotBlank(accountId)){
-                //删除相关缓存
-                RedisUtils.delete(jedis, CacheName.USER_TICKET + ticket);
-                RedisUtils.delete(jedis, CacheName.USER_INFO + accountId);
-                RedisUtils.delete(jedis, CacheName.USER_FUNCTION + accountId);
-                RedisUtils.close(jedis);
-            }
+            RedisUtils.delete(jedis, CacheName.USER_INFO + ticket);
+            RedisUtils.delete(jedis, CacheName.USER_FUNCTION + ticket);
+            RedisUtils.close(jedis);
         }
     }
 }

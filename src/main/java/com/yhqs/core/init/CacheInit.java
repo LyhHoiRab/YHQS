@@ -27,6 +27,8 @@ public class CacheInit{
 
         if(functions != null && !functions.isEmpty()){
             ShardedJedis jedis = pool.getResource();
+
+            //查询非需授权权限
             RedisUtils.save(jedis, CacheName.NO_PERMISSION_URL, functions);
             RedisUtils.close(jedis);
         }

@@ -50,7 +50,7 @@ public class MenuRestController{
     }
 
     @RequestMapping(value = "", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Responsed<List<Menu>> getByTicket(HttpServletRequest request){
+    public Responsed<List<Menu>> getByTicket(HttpServletRequest request) throws Exception{
         String ticket = request.getHeader(HttpHeaderName.AUTHORIZATION);
         List<Menu> list = menuService.getByTicket(ticket);
 
